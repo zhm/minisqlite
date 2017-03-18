@@ -23,8 +23,8 @@ class Client {
     this.id = ++nextClientID;
   }
 
-  connect(string, callback) {
-    this.nativeClient.connect(string, err => {
+  connect(string, flags, vfs, callback) {
+    this.nativeClient.connect(string, flags, vfs, err => {
       if (err) {
         return callback(err, this);
       }
@@ -41,13 +41,6 @@ class Client {
     this.nativeClient.query(sql);
 
     return new _cursor2.default(this);
-  }
-
-  // fetch a single result record
-  getResult(returnMetadata, callback) {
-    Client.setImmediate(() => {
-      callback(this.nativeClient.getResult(returnMetadata));
-    });
   }
 
   getResults(returnMetadata, callback) {
@@ -87,7 +80,7 @@ function createPool(options) {
   return genericPool.Pool({
     name: options.name || 'minisqlite',
     create: callback => {
-      new Client().connect(options.db, (err, client) => {
+      new Client().connect(options.db, null, null, (err, client) => {
         if (err) {
           return callback(client ? client.lastError : err);
         }

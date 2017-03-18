@@ -163,19 +163,7 @@ v8::Local<v8::Value> Client::ProcessSingleResult(bool returnMetadata) {
 
   int code = sqlite3_step(statement_);
 
-  // The empty_ flag breaks up the processing across multiple different commands
-  // we handle the result processing in batches and efficiently (not always) return
-  // the column metadata. For example, the batch size is 5, but if 2 different select
-  // queries are executed, one with 2 rows and one with 6 rows, it will be 2 batches.
-  // But we need to return different column metadata, so we need to prematurely end the
-  // batch once we reach the end of a single result set. When we get PGRES_EMPTY_QUERY or
-  // PGRES_COMMAND_OK we know we've reached the end.
   empty_ = true;
-
-  /* if (code != SQLITE_ROW) { */
-  /*   finished_ = true; */
-  /*   return Nan::Null(); */
-  /* } */
 
   SetLastError();
 
