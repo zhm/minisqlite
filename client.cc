@@ -28,6 +28,7 @@ void Client::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "lastError", LastError);
   Nan::SetPrototypeMethod(tpl, "lastInsertID", LastInsertID);
   Nan::SetPrototypeMethod(tpl, "finished", IsFinished);
+  Nan::SetPrototypeMethod(tpl, "createFunction", CreateFunction);
 
   constructor.Reset(tpl->GetFunction());
 
@@ -112,6 +113,52 @@ NAN_METHOD(Client::LastInsertID) {
   info.GetReturnValue().Set(id);
 }
 
+NAN_METHOD(Client::CreateFunction) {
+  Client* client = ObjectWrap::Unwrap<Client>(info.Holder());
+
+  std::string functionName = *Nan::Utf8String(info[0]);
+  int numberOfArguments = Nan::To<int>(info[1]).FromJust();
+  int textEncoding = Nan::To<int>(info[2]).FromJust();
+
+  Nan::Callback *mainFunction =
+    info[3]->IsFunction() ? new Nan::Callback(info[3].As<v8::Function>()) : nullptr;
+
+  Nan::Callback *stepFunction =
+    info[4]->IsFunction() ? new Nan::Callback(info[4].As<v8::Function>()) : nullptr;
+
+  Nan::Callback *finalFunction =
+    info[5]->IsFunction() ? new Nan::Callback(info[5].As<v8::Function>()) : nullptr;
+
+  std::vector<Nan::Callback *> *callbacks = new std::vector<Nan::Callback *>();
+
+  callbacks->push_back(mainFunction);
+  callbacks->push_back(stepFunction);
+  callbacks->push_back(finalFunction);
+
+  auto result = sqlite3_create_function_v2(
+    client->connection_,
+    functionName.c_str(),
+    numberOfArguments,
+    textEncoding,
+    callbacks,
+    mainFunction ? CustomFunctionMain : nullptr,
+    stepFunction ? CustomFunctionStep : nullptr,
+    finalFunction ? CustomFunctionFinal : nullptr,
+    CustomFunctionDestroy
+  );
+
+  client->SetLastError(result);
+
+  if (result != SQLITE_OK) {
+    Nan::ThrowError(client->lastErrorMessage_.c_str());
+    return;
+  }
+
+  auto id = Nan::New<v8::Number>(result);
+
+  info.GetReturnValue().Set(id);
+}
+
 NAN_METHOD(Client::IsFinished) {
   Client* client = ObjectWrap::Unwrap<Client>(info.Holder());
 
@@ -174,7 +221,7 @@ v8::Local<v8::Value> Client::ProcessSingleResult(bool returnMetadata) {
 
   empty_ = true;
 
-  SetLastError();
+  SetLastError(code);
 
   switch (code) {
     case SQLITE_BUSY: {
@@ -213,6 +260,64 @@ v8::Local<v8::Value> Client::ProcessSingleResult(bool returnMetadata) {
   }
 }
 
+void Client::CustomFunctionMain(sqlite3_context *context, int argc, sqlite3_value **argv) {
+  std::vector<Nan::Callback *> *callbacks = (std::vector<Nan::Callback *> *)sqlite3_user_data(context);
+
+  v8::Local<v8::Value> arguments[] = { ConvertValues(argc, argv) };
+
+  auto result = callbacks->at(0)->Call(1, &arguments[0]);
+
+  SetResult(context, result);
+}
+
+void Client::CustomFunctionStep(sqlite3_context *context, int argc, sqlite3_value **argv) {
+  std::vector<Nan::Callback *> *callbacks = (std::vector<Nan::Callback *> *)sqlite3_user_data(context);
+
+  AggregateContext *agg = static_cast<AggregateContext *>(sqlite3_aggregate_context(context, sizeof(AggregateContext)));
+
+  if (!agg->context) {
+    auto resultObject = Nan::New<v8::Object>();
+    agg->context = new Nan::Persistent<v8::Object>(resultObject);
+  }
+
+  v8::Local<v8::Value> arguments[] = { ConvertValues(argc, argv), Nan::New(*agg->context) };
+
+  callbacks->at(1)->Call(2, &arguments[0]);
+}
+
+void Client::CustomFunctionFinal(sqlite3_context *context) {
+  std::vector<Nan::Callback *> *callbacks = (std::vector<Nan::Callback *> *)sqlite3_user_data(context);
+
+  AggregateContext *agg = static_cast<AggregateContext *>(sqlite3_aggregate_context(context, sizeof(AggregateContext)));
+
+  v8::Local<v8::Value> arguments[] = { Nan::New(*agg->context) };
+
+  auto result = callbacks->at(2)->Call(1, &arguments[0]);
+
+  if (agg->context) {
+    agg->context->Reset();
+    delete agg->context;
+  }
+
+  SetResult(context, result);
+}
+
+void Client::CustomFunctionDestroy(void *pointer) {
+  std::vector<Nan::Callback *> *callbacks = (std::vector<Nan::Callback *> *)pointer;
+
+  if (callbacks->at(0)) {
+    delete callbacks->at(0);
+  }
+  if (callbacks->at(1)) {
+    delete callbacks->at(1);
+  }
+  if (callbacks->at(2)) {
+    delete callbacks->at(2);
+  }
+
+  delete callbacks;
+}
+
 void Client::FinalizeStatement() {
   if (statement_) {
     sqlite3_finalize(statement_);
@@ -227,7 +332,7 @@ void Client::CreateNextStatement() {
 
   int result = sqlite3_prepare_v2(connection_, sql_.c_str(), -1, &statement_, &rest);
 
-  SetLastError();
+  SetLastError(result);
 
   if (result != SQLITE_OK) {
     sql_ = "";
@@ -253,10 +358,21 @@ void Client::Close() {
   }
 }
 
-void Client::SetLastError() {
-  int code = sqlite3_errcode(connection_);
+void Client::SetLastError(int code) {
+  switch (code) {
+    case SQLITE_OK:
+    case SQLITE_ROW:
+      lastErrorMessage_ = "";
+      break;
 
-  lastErrorMessage_ = code == SQLITE_OK || code == SQLITE_ROW ? "" : sqlite3_errmsg(connection_);
+    case SQLITE_MISUSE:
+      lastErrorMessage_ = "misuse";
+      break;
+
+    default:
+      lastErrorMessage_ = sqlite3_errmsg(connection_);
+      break;
+  }
 
   if (lastErrorMessage_.empty()) {
     return;
@@ -342,4 +458,54 @@ v8::Local<v8::Object> Client::CreateResult(sqlite3_stmt *statement, bool include
   }
 
   return resultObject;
+}
+
+v8::Local<v8::Object> Client::ConvertValues(int count, sqlite3_value **values) {
+  auto resultObject = Nan::New<v8::Array>();
+
+  for (int i = 0; i < count; ++i) {
+    auto value = values[i];
+
+    int valueType = sqlite3_value_type(value);
+
+    switch (valueType) {
+      case SQLITE_NULL:
+         Nan::Set(resultObject, i, Nan::Null());
+         break;
+
+      case SQLITE_TEXT:
+         Nan::Set(resultObject, i, Nan::New((const char *)sqlite3_value_text(value)).ToLocalChecked());
+         break;
+
+      case SQLITE_FLOAT:
+         Nan::Set(resultObject, i, Nan::New(sqlite3_value_double(value)));
+         break;
+
+      case SQLITE_INTEGER:
+         Nan::Set(resultObject, i, Nan::New<v8::Number>(sqlite3_value_int64(value)));
+         break;
+
+      case SQLITE_BLOB:
+         const void *data = sqlite3_value_blob(value);
+         int size = sqlite3_value_bytes(value);
+         Nan::Set(resultObject, i, Nan::CopyBuffer((char *)data, size).ToLocalChecked());
+         break;
+    }
+  }
+
+  return resultObject;
+}
+
+void Client::SetResult(sqlite3_context *context, v8::Local<v8::Value> result) {
+  if (result->IsNumber()) {
+    sqlite3_result_int64(context, Nan::To<sqlite3_int64>(result).FromJust());
+  } else if (result->IsNull() || result->IsUndefined()) {
+    sqlite3_result_null(context);
+  } else if (result->IsString()) {
+    sqlite3_result_text(context, *Nan::Utf8String(result), -1, SQLITE_TRANSIENT);
+  } else if (result->IsBoolean()) {
+    sqlite3_result_int64(context, (int)Nan::To<bool>(result).FromJust());
+  } else {
+    sqlite3_result_text(context, *Nan::Utf8String(result->ToString()), -1, SQLITE_TRANSIENT);
+  }
 }

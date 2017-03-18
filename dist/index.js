@@ -74,6 +74,13 @@ class Client {
 
     return queryError;
   }
+
+  createFunction(name, argc, encoding, func, step, final) {
+    encoding = encoding || 1; // SQLITE_UTF8
+    argc = argc || -1;
+
+    return this.nativeClient.createFunction(name, argc, encoding, func, step, final);
+  }
 }
 
 exports.Client = Client;

@@ -1,2 +1,2 @@
 require('babel-core/register')();
-require('./debug-sqlite3');
+require('./sqlite3-bench');

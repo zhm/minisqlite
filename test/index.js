@@ -18,11 +18,9 @@ const execSQL = (database, command, callback) => {
       throw err;
     }
 
-    console.log('RUNNING', command);
-
-    client.query(command).each((err, finished, columns, values, index) => {
+    client.query(command).each((err, {finished, columns, values, index}) => {
       /* eslint-disable callback-return */
-      callback(err, finished, columns, values, index, client);
+      callback(err, {finished, columns, values, index, client});
       /* eslint-enable callback-return */
 
       if (finished) {
@@ -38,7 +36,7 @@ describe('minisqlite', () => {
     let lastColumns = null;
     let lastValues = null;
 
-    execSQL(db, sql, (err, finished, columns, values, index, client) => {
+    execSQL(db, sql, (err, {finished, columns, values, index, client}) => {
       if (err) {
         throw err;
       }
@@ -63,7 +61,7 @@ describe('minisqlite', () => {
   });
 
   it('should return errors', (done) => {
-    execSQL(db, 'sele', (err, finished, columns, values, index) => {
+    execSQL(db, 'sele', (err, {finished, columns, values, index, client}) => {
       if (finished) {
         assert.equal(columns, null);
         assert.equal(values, null);
@@ -80,7 +78,7 @@ describe('minisqlite', () => {
   it('should work properly for empty result sets', (done) => {
     let lastColumns = null;
 
-    execSQL(db, 'SELECT 1 AS count WHERE 1 = 0', (err, finished, columns, values, index) => {
+    execSQL(db, 'SELECT 1 AS count WHERE 1 = 0', (err, {finished, columns, values, index, client}) => {
       if (err) {
         throw err;
       }
@@ -95,6 +93,63 @@ describe('minisqlite', () => {
         assert.equal(index, 0);
         done();
       }
+    });
+  });
+
+  it('should allow definition of custom scalar functions', (done) => {
+    pool.acquire((err, client) => {
+      if (err) {
+        throw err;
+      }
+
+      client.createScalarFunction('TESTFUNC', (args) => {
+        return args[0] + 1;
+      });
+
+      let lastValues = null;
+
+      client.query('SELECT TESTFUNC(1337)').each((err, {finished, columns, values, index}) => {
+        if (values) {
+          lastValues = values;
+        }
+
+        if (finished) {
+          pool.release(client);
+          assert.equal(lastValues[0], 1338);
+          done();
+        }
+      });
+    });
+  });
+
+  it('should allow definition of custom aggregate functions', (done) => {
+    pool.acquire((err, client) => {
+      if (err) {
+        throw err;
+      }
+
+      client.createAggregateFunction('TEXTCONCAT', '', (args, context) => {
+        context.result = context.result + args[0];
+      });
+
+      client.createAggregateFunction('SUMTEST', '', (args, context) => {
+        context.result = context.result + args[0] + args[1];
+      });
+
+      let lastValues = null;
+
+      client.query('SELECT SUMTEST(t2, t2), TEXTCONCAT(t2) FROM test_table').each((err, {finished, columns, values, index}) => {
+        if (values) {
+          lastValues = values;
+        }
+
+        if (finished) {
+          pool.release(client);
+          assert.equal(lastValues[0], '112233');
+          assert.equal(lastValues[1], '123');
+          done();
+        }
+      });
     });
   });
 });

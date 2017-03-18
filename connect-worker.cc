@@ -16,7 +16,7 @@ void ConnectWorker::Execute() {
 
   int result = sqlite3_open_v2(connectionString_.c_str(), &client_->connection_, flags_, vfs);
 
-  client_->SetLastError();
+  client_->SetLastError(result);
 
   if (result != SQLITE_OK) {
     client_->Close();
