@@ -6,6 +6,10 @@ Object.defineProperty(exports, "__esModule", {
 exports.Client = undefined;
 exports.createPool = createPool;
 
+var _assert = require('assert');
+
+var _assert2 = _interopRequireDefault(_assert);
+
 var _cursor = require('./cursor');
 
 var _cursor2 = _interopRequireDefault(_cursor);
@@ -79,7 +83,32 @@ class Client {
     encoding = encoding || 1; // SQLITE_UTF8
     argc = argc || -1;
 
+    if (func) {
+      step = null;
+      final = null;
+    } else if (typeof step === 'function') {
+      final = typeof final === 'function' ? final : o => o.result;
+      func = null;
+    }
+
     return this.nativeClient.createFunction(name, argc, encoding, func, step, final);
+  }
+
+  createScalarFunction(name, func) {
+    return this.createFunction(name, -1, 1, func, null, null);
+  }
+
+  createAggregateFunction(name, initialValue, step, final) {
+    const aggregate = (args, context) => {
+      if (!context.initialized) {
+        context.initialized = true;
+        context.result = initialValue;
+      }
+
+      return step(args, context);
+    };
+
+    return this.createFunction(name, -1, 1, null, aggregate, final);
   }
 }
 
