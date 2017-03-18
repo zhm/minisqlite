@@ -33,6 +33,8 @@ private:
 
   static NAN_METHOD(LastError);
 
+  static NAN_METHOD(LastInsertID);
+
   static Nan::Persistent<v8::Function> constructor;
 
   void Close();

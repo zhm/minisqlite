@@ -26,6 +26,7 @@ void Client::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "close", Close);
   Nan::SetPrototypeMethod(tpl, "getResults", GetResults);
   Nan::SetPrototypeMethod(tpl, "lastError", LastError);
+  Nan::SetPrototypeMethod(tpl, "lastInsertID", LastInsertID);
   Nan::SetPrototypeMethod(tpl, "finished", IsFinished);
 
   constructor.Reset(tpl->GetFunction());
@@ -101,6 +102,14 @@ NAN_METHOD(Client::LastError) {
 
     info.GetReturnValue().Set(errorObject);
   }
+}
+
+NAN_METHOD(Client::LastInsertID) {
+  Client* client = ObjectWrap::Unwrap<Client>(info.Holder());
+
+  auto id = Nan::New<v8::Number>(sqlite3_last_insert_rowid(client->connection_));
+
+  info.GetReturnValue().Set(id);
 }
 
 NAN_METHOD(Client::IsFinished) {
@@ -312,7 +321,7 @@ v8::Local<v8::Object> Client::CreateResult(sqlite3_stmt *statement, bool include
            break;
 
         case SQLITE_INTEGER:
-           Nan::Set(values, i, Nan::New(sqlite3_column_int(statement, i)));
+           Nan::Set(values, i, Nan::New<v8::Number>(sqlite3_column_int64(statement, i)));
            break;
 
         case SQLITE_BLOB:

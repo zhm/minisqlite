@@ -53,6 +53,10 @@ class Client {
     return this.nativeClient.close();
   }
 
+  get lastInsertID() {
+    return this.nativeClient.lastInsertID();
+  }
+
   get lastError() {
     const error = this.nativeClient.lastError();
 

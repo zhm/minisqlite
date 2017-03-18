@@ -22,7 +22,7 @@ const execSQL = (database, command, callback) => {
 
     client.query(command).each((err, finished, columns, values, index) => {
       /* eslint-disable callback-return */
-      callback(err, finished, columns, values, index);
+      callback(err, finished, columns, values, index, client);
       /* eslint-enable callback-return */
 
       if (finished) {
@@ -38,7 +38,7 @@ describe('minisqlite', () => {
     let lastColumns = null;
     let lastValues = null;
 
-    execSQL(db, sql, (err, finished, columns, values, index) => {
+    execSQL(db, sql, (err, finished, columns, values, index, client) => {
       if (err) {
         throw err;
       }
@@ -56,6 +56,7 @@ describe('minisqlite', () => {
         assert.equal(lastColumns.length, 2);
         assert.equal(lastIndex, 2);
         assert.deepEqual(lastValues, [ 'test3', 3 ]);
+        assert.equal(client.lastInsertID, 3);
         done();
       }
     });
