@@ -75,6 +75,25 @@ describe('minisqlite', () => {
     });
   });
 
+  it('should return errors for constraint violations', (done) => {
+    const constraintSQL = `
+      CREATE UNIQUE INDEX idx_t1 ON test_table (t1);
+
+      INSERT INTO test_table (t1, t2) VALUES ('testvalue', 4);
+      INSERT INTO test_table (t1, t2) VALUES ('testvalue', 4);
+    `;
+
+    execSQL(db, constraintSQL, (err, {finished, columns, values, index, client}) => {
+      if (finished) {
+        assert.equal(columns, null);
+        assert.equal(values, null);
+        assert.equal(index, 1);
+        assert.equal(err.message, 'UNIQUE constraint failed: test_table.t1');
+        done();
+      }
+    });
+  });
+
   it('should work properly for empty result sets', (done) => {
     let lastColumns = null;
 
@@ -145,8 +164,8 @@ describe('minisqlite', () => {
 
         if (finished) {
           pool.release(client);
-          assert.equal(lastValues[0], '112233');
-          assert.equal(lastValues[1], '123');
+          assert.equal(lastValues[0], '11223344');
+          assert.equal(lastValues[1], '1234');
           done();
         }
       });

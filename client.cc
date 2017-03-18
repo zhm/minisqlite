@@ -44,7 +44,7 @@ NAN_METHOD(Client::New) {
     const int argc = 1;
     v8::Local<v8::Value> argv[argc] = { info[0] };
     v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-    info.GetReturnValue().Set(cons->NewInstance(argc, argv));
+    info.GetReturnValue().Set(Nan::NewInstance(cons, argc, argv).ToLocalChecked());
   }
 }
 
@@ -212,14 +212,14 @@ NAN_METHOD(Client::GetResults) {
 }
 
 v8::Local<v8::Value> Client::ProcessSingleResult(bool returnMetadata) {
+  empty_ = true;
+
   if (!statement_) {
     finished_ = true;
     return Nan::Null();
   }
 
   int code = sqlite3_step(statement_);
-
-  empty_ = true;
 
   SetLastError(code);
 
@@ -241,20 +241,21 @@ v8::Local<v8::Value> Client::ProcessSingleResult(bool returnMetadata) {
       break;
     }
 
-    case SQLITE_ERROR:
-    case SQLITE_MISUSE: {
-      empty_ = true;
-      FinalizeStatement();
-      return Nan::Null();
-      break;
-    }
-
     case SQLITE_ROW: {
       empty_ = false;
 
       auto resultObject = CreateResult(statement_, true, returnMetadata);
 
       return resultObject;
+      break;
+    }
+
+    default: {
+      // SQLITE_ERROR
+      // SQLITE_MISUSE
+      empty_ = true;
+      FinalizeStatement();
+      return Nan::Null();
       break;
     }
   }

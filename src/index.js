@@ -24,8 +24,10 @@ export class Client {
 
   query(sql) {
     if (!this.nativeClient.finished()) {
-      throw new Error('client in use', this.id);
+      throw new Error('client in use, last statement: ' + this._sql);
     }
+
+    this._sql = sql;
 
     this.nativeClient.query(sql);
 
