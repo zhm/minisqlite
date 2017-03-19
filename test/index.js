@@ -1,4 +1,4 @@
-import { createPool } from '../src';
+import { createPool, Client } from '../src';
 
 import assert from 'assert';
 import fs from 'fs';
