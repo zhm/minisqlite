@@ -499,13 +499,16 @@ v8::Local<v8::Object> Client::ConvertValues(int count, sqlite3_value **values) {
 
 void Client::SetResult(sqlite3_context *context, v8::Local<v8::Value> result) {
   if (result->IsNumber()) {
-    sqlite3_result_int64(context, Nan::To<sqlite3_int64>(result).FromJust());
+    sqlite3_result_int64(context, (sqlite3_int64)Nan::To<int64_t>(result).FromJust());
   } else if (result->IsNull() || result->IsUndefined()) {
     sqlite3_result_null(context);
   } else if (result->IsString()) {
     sqlite3_result_text(context, *Nan::Utf8String(result), -1, SQLITE_TRANSIENT);
   } else if (result->IsBoolean()) {
     sqlite3_result_int64(context, (int)Nan::To<bool>(result).FromJust());
+  } else if (node::Buffer::HasInstance(result)) {
+    v8::Local<v8::Object> buffer = Nan::To<v8::Object>(result).ToLocalChecked();
+    sqlite3_result_blob(context, node::Buffer::Data(buffer), node::Buffer::Length(buffer), SQLITE_TRANSIENT);
   } else {
     sqlite3_result_text(context, *Nan::Utf8String(result->ToString()), -1, SQLITE_TRANSIENT);
   }
