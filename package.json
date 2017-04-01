@@ -1,6 +1,6 @@
 {
   "name": "minisqlite",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "SQLite bindings for Nodejs",
   "homepage": "http://github.com/zhm/minisqlite",
   "main": "dist/index.js",
