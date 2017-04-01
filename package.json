@@ -1,6 +1,6 @@
 {
   "name": "minisqlite",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "SQLite bindings for Nodejs",
   "homepage": "http://github.com/zhm/minisqlite",
   "main": "dist/index.js",
@@ -43,8 +43,7 @@
     "generic-pool": "^2.4.2",
     "nan": "^2.3.3",
     "node-gyp": "^3.3.1",
-    "rimraf": "^2.6.1",
-    "sqlite3": "^3.1.8"
+    "rimraf": "^2.6.1"
   },
   "keywords": [
     "sqlite",
