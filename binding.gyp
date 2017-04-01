@@ -20,8 +20,7 @@
         'SQLITE_ENABLE_COLUMN_METADATA',
         'SQLITE_ENABLE_NULL_TRIM',
         'SQLITE_ENABLE_PREUPDATE_HOOK',
-        'SQLITE_ENABLE_STAT4',
-        'SQLITE_API=__attribute__ ((visibility ("hidden")))' # hide the sqlite symbols
+        'SQLITE_ENABLE_STAT4'
       ],
       'conditions': [
       ]
