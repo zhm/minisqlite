@@ -27,6 +27,12 @@ export class Client {
       throw new Error('client in use, last statement: ' + this._sql);
     }
 
+    if (sql == null) {
+      sql = '';
+    }
+
+    sql = sql.replace(/\0/g, '');
+
     this._sql = sql;
 
     this.nativeClient.query(sql);
