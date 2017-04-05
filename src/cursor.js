@@ -12,32 +12,33 @@ export default class Cursor {
 
   each(callback) {
     this.next((err, {finished, columns, values, index, client}) => {
-      /* eslint-disable callback-return */
-      callback(err, {finished, columns, values, index, client});
-      /* eslint-enable callback-return */
+      const done = () => {
+        if (!finished) {
+          this.each(callback);
+        }
+      };
 
-      if (!finished) {
-        this.each(callback);
-      }
+      callback(err, {finished, columns, values, index, client, done});
     });
   }
 
   eachBatch(callback) {
     this.nextBatch(() => {
-      /* eslint-disable callback-return */
+      const done = () => {
+        this.index += this.batch.length;
+
+        if (!this.finished) {
+          this.eachBatch(callback);
+        }
+      };
+
       callback(this.error,
                {finished: this.finished,
                 columns: this.columns,
                 values: this.batch,
                 index: this.index,
-                client: this.client});
-      /* eslint-enable callback-return */
-
-      this.index += this.batch.length;
-
-      if (!this.finished) {
-        this.eachBatch(callback);
-      }
+                client: this.client,
+                done});
     });
   }
 
