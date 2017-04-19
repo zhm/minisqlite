@@ -1,42 +1,47 @@
-import { createPool, Client } from '../src';
+import { Database, Statement } from '../src';
 
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
 
-const db = 'test.db';
+const databaseFileName = 'test.db';
 const sql = fs.readFileSync(path.join(__dirname, 'test.sql')).toString();
 
-rimraf.sync(db);
+rimraf.sync(databaseFileName);
 
-const pool = createPool({db: db});
+let db = null;
 
 const execSQL = (database, command, callback) => {
-  pool.acquire((err, client) => {
-    if (err) {
-      throw err;
-    }
+  // if (err) {
+  //   throw err;
+  // }
 
-    client.query(command).each((err, {finished, columns, values, index}) => {
-      /* eslint-disable callback-return */
-      callback(err, {finished, columns, values, index, client});
-      /* eslint-enable callback-return */
+  db.query(command).each((err, {finished, columns, values, index, statement, next}) => {
+    /* eslint-disable callback-return */
+    callback(err, {finished, columns, values, index, statement, next});
 
-      if (finished) {
-        pool.release(client);
-      }
-    });
+    next();
+    /* eslint-enable callback-return */
+
+    // if (finished) {
+    //   pool.release(client);
+    // }
   });
 };
 
 describe('minisqlite', () => {
+  beforeEach((done) => {
+    db = new Database();
+    db.open(databaseFileName, null, null, done);
+  });
+
   it('should query the database', (done) => {
     let lastIndex = 0;
     let lastColumns = null;
     let lastValues = null;
 
-    execSQL(db, sql, (err, {finished, columns, values, index, client}) => {
+    execSQL(db, sql, (err, {finished, columns, values, index, statement}) => {
       if (err) {
         throw err;
       }
@@ -54,14 +59,14 @@ describe('minisqlite', () => {
         assert.equal(lastColumns.length, 2);
         assert.equal(lastIndex, 2);
         assert.deepEqual(lastValues, [ 'test3', 3 ]);
-        assert.equal(client.lastInsertID, 3);
+        assert.equal(db.lastInsertID, 3);
         done();
       }
     });
   });
 
   it('should return errors', (done) => {
-    execSQL(db, 'sele', (err, {finished, columns, values, index, client}) => {
+    execSQL(db, 'sele', (err, {finished, columns, values, index, statement}) => {
       if (finished) {
         assert.equal(columns, null);
         assert.equal(values, null);
@@ -83,7 +88,7 @@ describe('minisqlite', () => {
       INSERT INTO test_table (t1, t2) VALUES ('testvalue', 4);
     `;
 
-    execSQL(db, constraintSQL, (err, {finished, columns, values, index, client}) => {
+    execSQL(db, constraintSQL, (err, {finished, columns, values, index, statement}) => {
       if (finished) {
         assert.equal(columns, null);
         assert.equal(values, null);
@@ -97,7 +102,7 @@ describe('minisqlite', () => {
   it('should work properly for empty result sets', (done) => {
     let lastColumns = null;
 
-    execSQL(db, 'SELECT 1 AS count WHERE 1 = 0', (err, {finished, columns, values, index, client}) => {
+    execSQL(db, 'SELECT 1 AS count WHERE 1 = 0', (err, {finished, columns, values, index, statement}) => {
       if (err) {
         throw err;
       }
@@ -116,59 +121,63 @@ describe('minisqlite', () => {
   });
 
   it('should allow definition of custom scalar functions', (done) => {
-    pool.acquire((err, client) => {
-      if (err) {
-        throw err;
+    db.createScalarFunction('TESTFUNC', (args) => {
+      return args[0] + 1;
+    });
+
+    let lastValues = null;
+
+    db.query('SELECT TESTFUNC(1337)').each((err, {finished, columns, values, index, next}) => {
+      if (values) {
+        lastValues = values;
       }
 
-      client.createScalarFunction('TESTFUNC', (args) => {
-        return args[0] + 1;
-      });
+      if (finished) {
+        assert.equal(lastValues[0], 1338);
+        done();
+      }
 
-      let lastValues = null;
-
-      client.query('SELECT TESTFUNC(1337)').each((err, {finished, columns, values, index}) => {
-        if (values) {
-          lastValues = values;
-        }
-
-        if (finished) {
-          pool.release(client);
-          assert.equal(lastValues[0], 1338);
-          done();
-        }
-      });
+      next();
     });
   });
 
   it('should allow definition of custom aggregate functions', (done) => {
-    pool.acquire((err, client) => {
-      if (err) {
-        throw err;
+    db.createAggregateFunction('TEXTCONCAT', '', (args, context) => {
+      context.result = context.result + args[0];
+    });
+
+    db.createAggregateFunction('SUMTEST', '', (args, context) => {
+      context.result = context.result + args[0] + args[1];
+    });
+
+    let lastValues = null;
+
+    db.query('SELECT SUMTEST(t2, t2), TEXTCONCAT(t2) FROM test_table').each((err, {finished, columns, values, index, next}) => {
+      if (values) {
+        lastValues = values;
       }
 
-      client.createAggregateFunction('TEXTCONCAT', '', (args, context) => {
-        context.result = context.result + args[0];
-      });
+      if (finished) {
+        assert.equal(lastValues[0], '11223344');
+        assert.equal(lastValues[1], '1234');
+        done();
+      }
 
-      client.createAggregateFunction('SUMTEST', '', (args, context) => {
-        context.result = context.result + args[0] + args[1];
-      });
-
-      let lastValues = null;
-
-      client.query('SELECT SUMTEST(t2, t2), TEXTCONCAT(t2) FROM test_table').each((err, {finished, columns, values, index}) => {
-        if (values) {
-          lastValues = values;
-        }
-
-        if (finished) {
-          pool.release(client);
-          assert.equal(lastValues[0], '11223344');
-          assert.equal(lastValues[1], '1234');
-          done();
-        }
-      });
+      next();
     });
+  });
+
+  it('should close the database with open statements', (done) => {
+    db.query('SELECT * FROM test_table').each((err, {finished, columns, values, index, next}) => {
+      console.log('body 1');
+    });
+
+    db.query('SELECT * FROM test_table').each((err, {finished, columns, values, index, next}) => {
+      console.log('body 2');
+    });
+
+    db.close();
+
+    done();
   });
 });

@@ -5,41 +5,45 @@
 
 #include "sqlite3.h"
 #include <nan.h>
+#include <vector>
 
 class ConnectWorker;
+class Statement;
 
 struct AggregateContext {
   Nan::Persistent<v8::Object> *context;
 };
 
-class Client : public Nan::ObjectWrap {
+class Database : public Nan::ObjectWrap {
 public:
   static void Init(v8::Local<v8::Object> exports);
 
+  void SetLastError(int code);
+
+  inline sqlite3 *GetDatabase() { return db_; };
+
+  void AddStatement(Statement *statement);
+
+  void RemoveStatement(Statement *statement);
+
 private:
-  friend class ConnectWorker;
+  friend class OpenWorker;
 
-  explicit Client();
+  explicit Database();
 
-  ~Client();
+  ~Database();
 
   static NAN_METHOD(New);
 
-  static NAN_METHOD(Connect);
-
-  static NAN_METHOD(Query);
-
-  static NAN_METHOD(GetResults);
+  static NAN_METHOD(Open);
 
   static NAN_METHOD(Close);
 
-  static NAN_METHOD(IsFinished);
+  static NAN_METHOD(CreateFunction);
 
   static NAN_METHOD(LastError);
 
   static NAN_METHOD(LastInsertID);
-
-  static NAN_METHOD(CreateFunction);
 
   static Nan::Persistent<v8::Function> constructor;
 
@@ -51,35 +55,17 @@ private:
 
   static void CustomFunctionDestroy(void *pointer);
 
-  void Close();
-
-  void SetLastError(int code);
-
-  void CreateNextStatement();
-
-  void FinalizeStatement();
-
-  v8::Local<v8::Value> ProcessSingleResult(bool returnMetadata);
-
-  static v8::Local<v8::Object> CreateResult(sqlite3_stmt *statement, bool includeValues, bool includeMetadata);
-
-  static v8::Local<v8::Object> ConvertValues(int count, sqlite3_value **values);
-
   static void SetResult(sqlite3_context *context, v8::Local<v8::Value> result);
 
-  sqlite3 *connection_;
-
-  sqlite3_stmt *statement_;
-
-  std::string sql_;
+  void Close();
 
   std::string lastErrorMessage_;
 
   std::map<std::string, std::string> lastError_;
 
-  bool finished_;
+  sqlite3 *db_;
 
-  bool empty_;
+  std::vector<Statement *> statements_;
 };
 
 #endif

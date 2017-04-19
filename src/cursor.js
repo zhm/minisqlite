@@ -1,6 +1,6 @@
 export default class Cursor {
-  constructor(client) {
-    this.client = client;
+  constructor(statement) {
+    this.statement = statement;
     this.batchOffset = 0;
     this.batchStart = 0;
     this.batch = [];
@@ -11,20 +11,20 @@ export default class Cursor {
   }
 
   each(callback) {
-    this.next((err, {finished, columns, values, index, client}) => {
-      const done = () => {
+    this.next((err, {finished, columns, values, index, statement}) => {
+      const next = () => {
         if (!finished) {
           this.each(callback);
         }
       };
 
-      callback(err, {finished, columns, values, index, client, done});
+      callback(err, {finished, columns, values, index, statement, next});
     });
   }
 
   eachBatch(callback) {
     this.nextBatch(() => {
-      const done = () => {
+      const next = () => {
         this.index += this.batch.length;
 
         if (!this.finished) {
@@ -37,8 +37,8 @@ export default class Cursor {
                 columns: this.columns,
                 values: this.batch,
                 index: this.index,
-                client: this.client,
-                done});
+                statement: this.statement,
+                next});
     });
   }
 
@@ -62,7 +62,7 @@ export default class Cursor {
                 columns: this.columns,
                 values: values,
                 index: this.batchStart + batchOffset,
-                client: this.client});
+                statement: this.statement});
       /* eslint-enable callback-return */
     };
 
@@ -84,11 +84,11 @@ export default class Cursor {
       this.columns = null;
     }
 
-    this.client.getResults(this.needsMetadata, (results) => {
+    this.statement.getResults(this.needsMetadata, (results) => {
       this.needsMetadata = false;
       this.batch = results;
       this.batchOffset = 0;
-      this.finished = this.client.nativeClient.finished();
+      this.finished = this.statement._native.finished();
 
       const hasResult = results && results.length;
 
@@ -124,7 +124,7 @@ export default class Cursor {
         this.needsMetadata = true;
       }
 
-      const error = this.client.lastError;
+      const error = this.statement._database.lastError;
 
       if (error) {
         this.error = error;

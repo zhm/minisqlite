@@ -3,8 +3,9 @@
     {
       "target_name": "addon",
       "sources": [ "addon.cc",
-                   "client.cc",
-                   "connect-worker.cc",
+                   "database.cc",
+                   "statement.cc",
+                   "open-worker.cc",
                    "deps/sqlite3.c" ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")",

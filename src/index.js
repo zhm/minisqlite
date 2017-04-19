@@ -1,19 +1,19 @@
-const NativeClient = require('bindings')('addon').Client;
-const genericPool = require('generic-pool');
+const NativeDatabase = require('bindings')('addon').Database;
+const NativeStatement = require('bindings')('addon').Statement;
 
 import assert from 'assert';
 import Cursor from './cursor';
 
-let nextClientID = 0;
+let nextObjectID = 0;
 
-export class Client {
+export class Database {
   constructor() {
-    this.nativeClient = new NativeClient();
-    this.id = ++nextClientID;
+    this._native = new NativeDatabase();
+    this.id = ++nextObjectID;
   }
 
-  connect(string, flags, vfs, callback) {
-    this.nativeClient.connect(string, flags, vfs, (err) => {
+  open(string, flags, vfs, callback) {
+    this._native.open(string, flags, vfs, (err) => {
       if (err) {
         return callback(err, this);
       }
@@ -23,39 +23,20 @@ export class Client {
   }
 
   query(sql) {
-    if (!this.nativeClient.finished()) {
-      throw new Error('client in use, last statement: ' + this._sql);
-    }
-
-    if (sql == null) {
-      sql = '';
-    }
-
-    sql = sql.replace(/\0/g, '');
-
-    this._sql = sql;
-
-    this.nativeClient.query(sql);
-
-    return new Cursor(this);
-  }
-
-  getResults(returnMetadata, callback) {
-    Client.setImmediate(() => {
-      callback(this.nativeClient.getResults(returnMetadata));
-    });
+    const statement = new Statement({database: this});
+    return statement.query(sql);
   }
 
   close() {
-    return this.nativeClient.close();
+    return this._native.close();
   }
 
   get lastInsertID() {
-    return this.nativeClient.lastInsertID();
+    return this._native.lastInsertID();
   }
 
   get lastError() {
-    const error = this.nativeClient.lastError();
+    const error = this._native.lastError();
 
     if (error == null) {
       return null;
@@ -84,7 +65,7 @@ export class Client {
       func = null;
     }
 
-    return this.nativeClient.createFunction(name, argc, encoding, func, step, final);
+    return this._native.createFunction(name, argc, encoding, func, step, final);
   }
 
   createScalarFunction(name, func) {
@@ -105,28 +86,45 @@ export class Client {
   }
 }
 
-Client.setImmediate = setImmediate;
+export class Statement {
+  constructor({database}) {
+    this._native = new NativeStatement();
+    this._database = database;
+    this.id = ++nextObjectID;
+  }
 
-export function createPool(options) {
-  /* eslint-disable new-cap */
-  return genericPool.Pool({
-    name: options.name || 'minisqlite',
-    create: (callback) => {
-      new Client().connect(options.db, null, null, (err, client) => {
-        if (err) {
-          return callback(client ? client.lastError : err);
-        }
+  query(sql) {
+    assert(this._database instanceof Database, 'invalid database argument');
+    assert(this._database._native, 'invalid database handle');
 
-        return callback(null, client);
-      });
-    },
-    destroy: (client) => {
-      client.close();
-    },
-    max: options.max || 10,
-    idleTimeoutMillis: options.idleTimeoutMillis || 30000,
-    reapIntervalMillis: options.reapIntervalMillis || 1000,
-    log: options.log
-  });
-  /* eslint-enable new-cap */
+    if (!this._native.finished()) {
+      throw new Error('client in use, last statement: ' + this._sql);
+    }
+
+    if (sql == null) {
+      sql = '';
+    }
+
+    sql = sql.replace(/\0/g, '');
+
+    this._sql = sql;
+
+    this._native.query(this._database._native, sql);
+
+    return new Cursor(this);
+  }
+
+  getResults(returnMetadata, callback) {
+    Statement.setImmediate(() => {
+      const results = this._native.getResults(returnMetadata);
+
+      callback(results);
+    });
+  }
+
+  close() {
+    return this._native.close();
+  }
 }
+
+Statement.setImmediate = setImmediate;
