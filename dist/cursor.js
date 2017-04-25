@@ -4,8 +4,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 class Cursor {
-  constructor(client) {
-    this.client = client;
+  constructor(statement) {
+    this.statement = statement;
     this.batchOffset = 0;
     this.batchStart = 0;
     this.batch = [];
@@ -21,21 +21,21 @@ class Cursor {
           columns = _ref.columns,
           values = _ref.values,
           index = _ref.index,
-          client = _ref.client;
+          statement = _ref.statement;
 
-      const done = () => {
+      const next = () => {
         if (!finished) {
           this.each(callback);
         }
       };
 
-      callback(err, { finished: finished, columns: columns, values: values, index: index, client: client, done: done });
+      callback(err, { finished: finished, columns: columns, values: values, index: index, statement: statement, next: next });
     });
   }
 
   eachBatch(callback) {
     this.nextBatch(() => {
-      const done = () => {
+      const next = () => {
         this.index += this.batch.length;
 
         if (!this.finished) {
@@ -47,8 +47,8 @@ class Cursor {
         columns: this.columns,
         values: this.batch,
         index: this.index,
-        client: this.client,
-        done: done });
+        statement: this.statement,
+        next: next });
     });
   }
 
@@ -71,7 +71,7 @@ class Cursor {
         columns: this.columns,
         values: values,
         index: this.batchStart + batchOffset,
-        client: this.client });
+        statement: this.statement });
       /* eslint-enable callback-return */
     };
 
@@ -93,11 +93,11 @@ class Cursor {
       this.columns = null;
     }
 
-    this.client.getResults(this.needsMetadata, results => {
+    this.statement.getResults(this.needsMetadata, results => {
       this.needsMetadata = false;
       this.batch = results;
       this.batchOffset = 0;
-      this.finished = this.client.nativeClient.finished();
+      this.finished = this.statement._native.finished();
 
       const hasResult = results && results.length;
 
@@ -130,7 +130,7 @@ class Cursor {
         this.needsMetadata = true;
       }
 
-      const error = this.client.lastError;
+      const error = this.statement._database.lastError;
 
       if (error) {
         this.error = error;

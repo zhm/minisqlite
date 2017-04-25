@@ -3,8 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Client = undefined;
-exports.createPool = createPool;
+exports.Statement = exports.Database = undefined;
 
 var _assert = require('assert');
 
@@ -16,19 +15,19 @@ var _cursor2 = _interopRequireDefault(_cursor);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const NativeClient = require('bindings')('addon').Client;
-const genericPool = require('generic-pool');
+const NativeDatabase = require('bindings')('addon').Database;
+const NativeStatement = require('bindings')('addon').Statement;
 
-let nextClientID = 0;
+let nextObjectID = 0;
 
-class Client {
+class Database {
   constructor() {
-    this.nativeClient = new NativeClient();
-    this.id = ++nextClientID;
+    this._native = new NativeDatabase();
+    this.id = ++nextObjectID;
   }
 
-  connect(string, flags, vfs, callback) {
-    this.nativeClient.connect(string, flags, vfs, err => {
+  open(string, flags, vfs, callback) {
+    this._native.open(string, flags, vfs, err => {
       if (err) {
         return callback(err, this);
       }
@@ -38,39 +37,20 @@ class Client {
   }
 
   query(sql) {
-    if (!this.nativeClient.finished()) {
-      throw new Error('client in use, last statement: ' + this._sql);
-    }
-
-    if (sql == null) {
-      sql = '';
-    }
-
-    sql = sql.replace(/\0/g, '');
-
-    this._sql = sql;
-
-    this.nativeClient.query(sql);
-
-    return new _cursor2.default(this);
-  }
-
-  getResults(returnMetadata, callback) {
-    Client.setImmediate(() => {
-      callback(this.nativeClient.getResults(returnMetadata));
-    });
+    const statement = new Statement({ database: this });
+    return statement.query(sql);
   }
 
   close() {
-    return this.nativeClient.close();
+    return this._native.close();
   }
 
   get lastInsertID() {
-    return this.nativeClient.lastInsertID();
+    return this._native.lastInsertID();
   }
 
   get lastError() {
-    const error = this.nativeClient.lastError();
+    const error = this._native.lastError();
 
     if (error == null) {
       return null;
@@ -99,7 +79,7 @@ class Client {
       func = null;
     }
 
-    return this.nativeClient.createFunction(name, argc, encoding, func, step, final);
+    return this._native.createFunction(name, argc, encoding, func, step, final);
   }
 
   createScalarFunction(name, func) {
@@ -120,30 +100,50 @@ class Client {
   }
 }
 
-exports.Client = Client;
-Client.setImmediate = setImmediate;
+exports.Database = Database;
+class Statement {
+  constructor(_ref) {
+    let database = _ref.database;
 
-function createPool(options) {
-  /* eslint-disable new-cap */
-  return genericPool.Pool({
-    name: options.name || 'minisqlite',
-    create: callback => {
-      new Client().connect(options.db, null, null, (err, client) => {
-        if (err) {
-          return callback(client ? client.lastError : err);
-        }
+    this._native = new NativeStatement();
+    this._database = database;
+    this.id = ++nextObjectID;
+  }
 
-        return callback(null, client);
-      });
-    },
-    destroy: client => {
-      client.close();
-    },
-    max: options.max || 10,
-    idleTimeoutMillis: options.idleTimeoutMillis || 30000,
-    reapIntervalMillis: options.reapIntervalMillis || 1000,
-    log: options.log
-  });
-  /* eslint-enable new-cap */
+  query(sql) {
+    (0, _assert2.default)(this._database instanceof Database, 'invalid database argument');
+    (0, _assert2.default)(this._database._native, 'invalid database handle');
+
+    if (!this._native.finished()) {
+      throw new Error('client in use, last statement: ' + this._sql);
+    }
+
+    if (sql == null) {
+      sql = '';
+    }
+
+    sql = sql.replace(/\0/g, '');
+
+    this._sql = sql;
+
+    this._native.query(this._database._native, sql);
+
+    return new _cursor2.default(this);
+  }
+
+  getResults(returnMetadata, callback) {
+    Statement.setImmediate(() => {
+      const results = this._native.getResults(returnMetadata);
+
+      callback(results);
+    });
+  }
+
+  close() {
+    return this._native.close();
+  }
 }
+
+exports.Statement = Statement;
+Statement.setImmediate = setImmediate;
 //# sourceMappingURL=index.js.map
