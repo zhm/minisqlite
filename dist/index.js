@@ -3,7 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Statement = exports.Database = undefined;
+exports.Statement = exports.Database = exports.spatialitePath = undefined;
+
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
 
 var _assert = require('assert');
 
@@ -20,6 +24,14 @@ const NativeStatement = require('bindings')('addon').Statement;
 
 let nextObjectID = 0;
 
+const dirs = {
+  linux: 'linux',
+  win32: 'win',
+  darwin: 'mac'
+};
+
+const spatialitePath = exports.spatialitePath = _path2.default.resolve(_path2.default.join(__dirname, '..', 'lib', dirs[process.platform] || 'linux', 'mod_spatialite'));
+
 class Database {
   constructor() {
     this._native = new NativeDatabase();
@@ -33,6 +45,39 @@ class Database {
       }
 
       return callback(null, this);
+    });
+  }
+
+  loadSpatiaLite(callback) {
+    this.all(`SELECT load_extension('${spatialitePath}')`, callback);
+  }
+
+  all(sql, callback) {
+    const rows = [];
+
+    this.query(sql).each((err, _ref) => {
+      let finished = _ref.finished,
+          columns = _ref.columns,
+          values = _ref.values,
+          index = _ref.index,
+          statement = _ref.statement,
+          next = _ref.next;
+
+      if (err) {
+        callback(err, {});
+        return;
+      }
+
+      if (values) {
+        rows.push(values);
+      }
+
+      if (finished) {
+        callback(err, { rows: rows, columns: columns });
+        return;
+      }
+
+      next();
     });
   }
 
@@ -101,9 +146,11 @@ class Database {
 }
 
 exports.Database = Database;
+Database.spatialitePath = spatialitePath;
+
 class Statement {
-  constructor(_ref) {
-    let database = _ref.database;
+  constructor(_ref2) {
+    let database = _ref2.database;
 
     this._native = new NativeStatement();
     this._database = database;
