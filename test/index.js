@@ -169,15 +169,23 @@ describe('minisqlite', () => {
 
   it('should close the database with open statements', (done) => {
     db.query('SELECT * FROM test_table').each((err, {finished, columns, values, index, next}) => {
-      console.log('body 1');
     });
 
     db.query('SELECT * FROM test_table').each((err, {finished, columns, values, index, next}) => {
-      console.log('body 2');
     });
 
     db.close();
 
     done();
+  });
+
+  it('should initialize GeoPackage', (done) => {
+    db.query('SELECT InitSpatialMetadata()').each((err, {finished, columns, values, index, next}) => {
+      if (finished && err == null) {
+        done();
+      }
+
+      next();
+    });
   });
 });

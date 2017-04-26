@@ -1,0 +1,8 @@
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/install/local.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/list_install_components.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/rebuild_cache.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/edit_cache.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/gpkg_ext.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/install/strip.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/install.dir
+/Users/zac/dev/minisqlite/deps/gpkg/CMakeFiles/gpkg_static.dir

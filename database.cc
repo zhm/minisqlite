@@ -1,6 +1,7 @@
 #include "database.h"
 #include "statement.h"
 #include "open-worker.h"
+#include "gpkg/gpkg.h"
 
 #include <iostream>
 
@@ -29,6 +30,8 @@ void Database::Init(v8::Local<v8::Object> exports) {
   constructor.Reset(tpl->GetFunction());
 
   exports->Set(Nan::New("Database").ToLocalChecked(), tpl->GetFunction());
+
+  sqlite3_auto_extension((void(*)(void))sqlite3_gpkg_init);
 }
 
 NAN_METHOD(Database::New) {
