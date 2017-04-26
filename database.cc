@@ -1,7 +1,6 @@
 #include "database.h"
 #include "statement.h"
 #include "open-worker.h"
-#include "gpkg/gpkg.h"
 
 #include <iostream>
 
