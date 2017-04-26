@@ -31,7 +31,7 @@ void Database::Init(v8::Local<v8::Object> exports) {
 
   exports->Set(Nan::New("Database").ToLocalChecked(), tpl->GetFunction());
 
-  sqlite3_auto_extension((void(*)(void))sqlite3_gpkg_init);
+  /* sqlite3_auto_extension((void(*)(void))sqlite3_gpkg_init); */
 }
 
 NAN_METHOD(Database::New) {

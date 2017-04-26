@@ -30,6 +30,33 @@ const execSQL = (database, command, callback) => {
   });
 };
 
+const execSQLSimple = (database, command, callback) => {
+  // if (err) {
+  //   throw err;
+  // }
+
+  const rows = [];
+
+  db.query(command).each((err, {finished, columns, values, index, statement, next}) => {
+    if (err) {
+      callback(err, {});
+      return;
+    }
+
+    /* eslint-disable callback-return */
+    if (values) {
+      rows.push(values);
+    }
+
+    if (finished) {
+      callback(err, {rows, columns});
+      return;
+    }
+
+    next();
+  });
+};
+
 describe('minisqlite', () => {
   beforeEach((done) => {
     db = new Database();
@@ -179,13 +206,49 @@ describe('minisqlite', () => {
     done();
   });
 
-  it('should initialize GeoPackage', (done) => {
-    db.query('SELECT InitSpatialMetadata()').each((err, {finished, columns, values, index, next}) => {
-      if (finished && err == null) {
-        done();
+  // it('should initialize GeoPackage', (done) => {
+  //   db.query('SELECT InitSpatialMetadata()').each((err, {finished, columns, values, index, next}) => {
+  //     if (finished && err == null) {
+  //       done();
+  //     }
+
+  //     next();
+  //   });
+  // });
+
+  it('should initialize SpatiaLite', (done) => {
+    const libraryPath = path.resolve(path.join(__dirname, '..', 'lib', 'mod_spatialite'));
+
+    console.log('loading', libraryPath);
+
+    let sql = '';
+
+    execSQLSimple(db, `SELECT load_extension('${libraryPath}')`, (err, {rows, columns}) => {
+      if (err) {
+        throw err;
       }
 
-      next();
+      execSQLSimple(db, 'SELECT gpkgCreateBaseTables(), EnableGpkgMode(), GetGpkgMode()', (err, {rows, columns}) => {
+        if (err) {
+          throw err;
+        }
+
+        assert.equal(rows[0][0], null);
+        assert.equal(rows[0][1], null);
+        assert.equal(rows[0][2], 1);
+
+        sql = "SELECT AsText(Centroid(GeomFromText('POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))'))) AS test";
+
+        execSQLSimple(db, sql, (err, {rows, columns}) => {
+          if (err) {
+            throw err;
+          }
+
+          assert.equal(rows[0][0], 'POINT(25.454545 26.969697)');
+
+          done();
+        });
+      });
     });
   });
 });
