@@ -23,4 +23,6 @@ void OpenWorker::Execute() {
     SetErrorMessage(database_->lastErrorMessage_.c_str());
     return;
   }
+
+  sqlite3_enable_load_extension(database_->db_, 1);
 }

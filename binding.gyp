@@ -23,7 +23,9 @@
         'SQLITE_ENABLE_COLUMN_METADATA',
         'SQLITE_ENABLE_NULL_TRIM',
         'SQLITE_ENABLE_PREUPDATE_HOOK',
-        'SQLITE_ENABLE_STAT4'
+        'SQLITE_ENABLE_STAT4',
+        'SQLITE_ENABLE_LOAD_EXTENSION=1',
+        'GPKG_HAVE_CONFIG_H'
       ],
       'conditions': [
       ]
