@@ -1,10 +1,19 @@
 const NativeDatabase = require('bindings')('addon').Database;
 const NativeStatement = require('bindings')('addon').Statement;
 
+import path from 'path';
 import assert from 'assert';
 import Cursor from './cursor';
 
 let nextObjectID = 0;
+
+const dirs = {
+  linux: 'linux',
+  win32: 'win',
+  darwin: 'mac'
+};
+
+export const spatialitePath = path.resolve(path.join(__dirname, '..', 'lib', dirs[process.platform] || 'linux', 'mod_spatialite'));
 
 export class Database {
   constructor() {
@@ -19,6 +28,32 @@ export class Database {
       }
 
       return callback(null, this);
+    });
+  }
+
+  loadSpatiaLite(callback) {
+    this.all(`SELECT load_extension('${spatialitePath}')`, callback);
+  }
+
+  all(sql, callback) {
+    const rows = [];
+
+    this.query(sql).each((err, {finished, columns, values, index, statement, next}) => {
+      if (err) {
+        callback(err, {});
+        return;
+      }
+
+      if (values) {
+        rows.push(values);
+      }
+
+      if (finished) {
+        callback(err, {rows, columns});
+        return;
+      }
+
+      next();
     });
   }
 
@@ -85,6 +120,8 @@ export class Database {
     return this.createFunction(name, -1, 1, null, aggregate, final);
   }
 }
+
+Database.spatialitePath = spatialitePath;
 
 export class Statement {
   constructor({database}) {

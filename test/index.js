@@ -217,13 +217,10 @@ describe('minisqlite', () => {
   // });
 
   it('should initialize SpatiaLite', (done) => {
-    const libraryPath = path.resolve(path.join(__dirname, '..', 'lib', 'mod_spatialite'));
-
-    console.log('loading', libraryPath);
-
+    // const libraryPath = path.resolve(path.join(__dirname, '..', 'lib', 'mod_spatialite'));
     let sql = '';
 
-    execSQLSimple(db, `SELECT load_extension('${libraryPath}')`, (err, {rows, columns}) => {
+    db.loadSpatiaLite((err) => {
       if (err) {
         throw err;
       }
