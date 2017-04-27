@@ -216,36 +216,36 @@ describe('minisqlite', () => {
   //   });
   // });
 
-  it('should initialize SpatiaLite', (done) => {
-    // const libraryPath = path.resolve(path.join(__dirname, '..', 'lib', 'mod_spatialite'));
-    let sql = '';
+  // it('should initialize SpatiaLite', (done) => {
+  //   // const libraryPath = path.resolve(path.join(__dirname, '..', 'lib', 'mod_spatialite'));
+  //   let sql = '';
 
-    db.loadSpatiaLite((err) => {
-      if (err) {
-        throw err;
-      }
+  //   db.loadSpatiaLite((err) => {
+  //     if (err) {
+  //       throw err;
+  //     }
 
-      execSQLSimple(db, 'SELECT gpkgCreateBaseTables(), EnableGpkgMode(), GetGpkgMode()', (err, {rows, columns}) => {
-        if (err) {
-          throw err;
-        }
+  //     execSQLSimple(db, 'SELECT gpkgCreateBaseTables(), EnableGpkgMode(), GetGpkgMode()', (err, {rows, columns}) => {
+  //       if (err) {
+  //         throw err;
+  //       }
 
-        assert.equal(rows[0][0], null);
-        assert.equal(rows[0][1], null);
-        assert.equal(rows[0][2], 1);
+  //       assert.equal(rows[0][0], null);
+  //       assert.equal(rows[0][1], null);
+  //       assert.equal(rows[0][2], 1);
 
-        sql = "SELECT AsText(Centroid(GeomFromText('POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))'))) AS test";
+  //       sql = "SELECT AsText(Centroid(GeomFromText('POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))'))) AS test";
 
-        execSQLSimple(db, sql, (err, {rows, columns}) => {
-          if (err) {
-            throw err;
-          }
+  //       execSQLSimple(db, sql, (err, {rows, columns}) => {
+  //         if (err) {
+  //           throw err;
+  //         }
 
-          assert.equal(rows[0][0], 'POINT(25.454545 26.969697)');
+  //         assert.equal(rows[0][0], 'POINT(25.454545 26.969697)');
 
-          done();
-        });
-      });
-    });
-  });
+  //         done();
+  //       });
+  //     });
+  //   });
+  // });
 });
