@@ -3,11 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Statement = exports.Database = exports.spatialitePath = undefined;
-
-var _path = require('path');
-
-var _path2 = _interopRequireDefault(_path);
+exports.Statement = exports.Database = undefined;
 
 var _assert = require('assert');
 
@@ -23,14 +19,6 @@ const NativeDatabase = require('bindings')('addon').Database;
 const NativeStatement = require('bindings')('addon').Statement;
 
 let nextObjectID = 0;
-
-const dirs = {
-  linux: 'linux',
-  win32: 'win',
-  darwin: 'mac'
-};
-
-const spatialitePath = exports.spatialitePath = _path2.default.resolve(_path2.default.join(__dirname, '..', 'lib', dirs[process.platform] || 'linux', 'mod_spatialite'));
 
 class Database {
   constructor() {
@@ -48,8 +36,8 @@ class Database {
     });
   }
 
-  loadSpatiaLite(callback) {
-    this.all(`SELECT load_extension('${spatialitePath}')`, callback);
+  loadExtension(filePath, callback) {
+    this.all(`SELECT load_extension('${filePath}')`, callback);
   }
 
   all(sql, callback) {
@@ -146,8 +134,6 @@ class Database {
 }
 
 exports.Database = Database;
-Database.spatialitePath = spatialitePath;
-
 class Statement {
   constructor(_ref2) {
     let database = _ref2.database;
