@@ -40,7 +40,7 @@ before_install:
       source ./.nvm/nvm.sh;
     fi
 
-  - if [ "x$TARGET" == "x" ]; then
+  - if [ "$TARGET" == "electron" ]; then
       echo "Building electron $TARGET";
       export npm_config_target=$TARGET;
       export npm_config_arch=$TARGET_ARCH;
@@ -57,7 +57,7 @@ before_install:
     fi
 
 install:
-  - npm install -g node-gyp; HOME=~/.electron-gyp node-gyp rebuild;
+  - npm install -g node-gyp; HOME=~/.electron-gyp npm install --build-from-source --runtime=$RUNTIME --target=$TARGET;
 
 script:
   - if [ -z "$TARGET" ]; then
