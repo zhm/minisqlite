@@ -57,7 +57,7 @@ before_install:
     fi
 
 install:
-  - HOME=~/.electron-gyp npm install --build-from-source --runtime=$RUNTIME --target=$TARGET;
+  - HOME=~/.electron-gyp ./node_modules/.bin/node-gyp rebuild
 
 script:
   - if [ -z "$TARGET" ]; then
