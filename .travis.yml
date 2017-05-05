@@ -40,7 +40,7 @@ before_install:
 - if [ $TRAVIS_OS_NAME != "linux" ]; then git clone https://github.com/creationix/nvm.git
   ./.nvm; source ./.nvm/nvm.sh; fi
 
-- if [ "$TARGET" == "electron" ]; then echo "Building electron $TARGET"; export npm_config_target=$TARGET;
+- if [ "$RUNTIME" == "electron" ]; then echo "Building electron $TARGET"; export npm_config_target=$TARGET;
   export npm_config_arch=$TARGET_ARCH; export npm_config_target_arch=$TARGET_ARCH;
   export npm_config_disturl=https://atom.io/download/electron; export npm_config_runtime=electron;
   export npm_config_build_from_source=true; fi
