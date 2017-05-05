@@ -5,10 +5,6 @@ branches:
 
 compiler: clang
 
-os:
-  - linux
-  - osx
-
 sudo: false
 
 env:
@@ -45,18 +41,18 @@ before_install:
     fi
 
   - if [ "x$TARGET" == "x" ]; then
-      export npm_config_target=$TARGET
-      export npm_config_arch=$TARGET_ARCH
-      export npm_config_target_arch=$TARGET_ARCH
-      export npm_config_disturl=https://atom.io/download/electron
-      export npm_config_runtime=electron
-      export npm_config_build_from_source=true
+      export npm_config_target=$TARGET;
+      export npm_config_arch=$TARGET_ARCH;
+      export npm_config_target_arch=$TARGET_ARCH;
+      export npm_config_disturl=https://atom.io/download/electron;
+      export npm_config_runtime=electron;
+      export npm_config_build_from_source=true;
     fi
 
   - nvm install $NODE_VERSION
 
   - if [ -z "$TARGET" ]; then
-      export TARGET=$(node -v | sed -e '1s/^.//')
+      export TARGET=$(node -v | sed -e '1s/^.//');
     fi
 
 install:
@@ -64,7 +60,7 @@ install:
 
 script:
   - if [ -z "$TARGET" ]; then
-      npm test
+      npm test;
     fi
 
 after_success:
