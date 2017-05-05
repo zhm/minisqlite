@@ -41,6 +41,7 @@ before_install:
     fi
 
   - if [ "x$TARGET" == "x" ]; then
+      echo "Building electron $TARGET";
       export npm_config_target=$TARGET;
       export npm_config_arch=$TARGET_ARCH;
       export npm_config_target_arch=$TARGET_ARCH;
@@ -56,7 +57,7 @@ before_install:
     fi
 
 install:
-  - HOME=~/.electron-gyp npm install --build-from-source
+  - HOME=~/.electron-gyp npm install --build-from-source --runtime=$RUNTIME --target=$TARGET;
 
 script:
   - if [ -z "$TARGET" ]; then
