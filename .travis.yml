@@ -33,7 +33,7 @@ addons:
     - lcov
 
 install:
-- scripts/install.sh
+- source scripts/install.sh
 
 script:
 - if [ -z "$TARGET" ]; then npm test; fi
