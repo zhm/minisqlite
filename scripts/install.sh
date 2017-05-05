@@ -2,7 +2,7 @@ export CC=clang
 export CXX=clang++
 export npm_config_clang=1
 
-git clone https://github.com/creationix/nvm.git
+git clone https://github.com/creationix/nvm.git .nvm
 ./.nvm
 source ./.nvm/nvm.sh
 
