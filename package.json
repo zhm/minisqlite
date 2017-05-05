@@ -1,6 +1,6 @@
 {
   "name": "minisqlite",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "SQLite bindings for Nodejs",
   "homepage": "http://github.com/zhm/minisqlite",
   "main": "dist/index.js",
@@ -10,9 +10,9 @@
     "rebuild": "./node_modules/node-gyp/bin/node-gyp.js configure rebuild",
     "test": "mocha test/setup.js test/index.js",
     "clean": "rm -rf dist build",
-    "prepublish": "npm run clean && npm run build",
-    "lint": "node_modules/.bin/eslint 'src/**/*.js'",
-    "watch": "node_modules/.bin/babel src --out-dir dist --source-maps --watch"
+    "lint": "eslint 'src/**/*.js'",
+    "install": "node-pre-gyp install --fallback-to-build",
+    "watch": "babel src --out-dir dist --source-maps --watch"
   },
   "author": "Zac McCormick <zac.mccormick@gmail.com> (http://github.com/zhm)",
   "license": "BSD",
@@ -24,6 +24,7 @@
     "extends": "fulcrum"
   },
   "devDependencies": {
+    "aws-sdk": "^2.49.0",
     "babel-cli": "^6.9.0",
     "babel-core": "^6.9.0",
     "babel-eslint": "^6.0.4",
@@ -43,7 +44,13 @@
     "generic-pool": "^2.4.2",
     "nan": "^2.3.3",
     "node-gyp": "^3.3.1",
+    "node-pre-gyp": "^0.6.34",
     "rimraf": "^2.6.1"
+  },
+  "binary": {
+    "module_name": "minisqlite",
+    "module_path": "./build/Release/",
+    "host": "https://zhm.s3.amazonaws.com/minisqlite/"
   },
   "keywords": [
     "sqlite",

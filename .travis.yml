@@ -1,14 +1,74 @@
-language: node_js
-node_js:
-  - "4"
-  - "5"
+branches:
+  only:
+    - master
+    - /^v\d+\.\d+\.\d+$/
+
+compiler: clang
+
+os:
+  - linux
+  - osx
+
+sudo: false
+
+env:
+  global:
+    - JOBS: "8"
+
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      env: export NODE_VERSION="6" TARGET_ARCH="x64" RUNTIME="node"
+    - os: linux
+      env: export NODE_VERSION="7" TARGET_ARCH="x64" RUNTIME="node"
+    - os: linux
+      env: export NODE_VERSION="7" TARGET_ARCH="x64" RUNTIME="electron" TARGET="1.6.6"
+
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
+      - ubuntu-toolchain-r-test
     packages:
-    - gcc-4.8
-    - g++-4.8
-env:
-  - CXX=g++-4.8
-script: npm test
+      - build-essential
+      - libssl-dev
+      - gcc-4.9-multilib
+      - g++-4.9-multilib
+      - lcov
+
+before_install:
+  - export CC=clang
+  - export CXX=clang++
+  - export npm_config_clang=1
+
+  - if [ $TRAVIS_OS_NAME != "linux" ]; then
+      git clone https://github.com/creationix/nvm.git ./.nvm;
+      source ./.nvm/nvm.sh;
+    fi
+
+  - if [ "x$TARGET" == "x" ]; then
+      export npm_config_target=$TARGET
+      export npm_config_arch=$TARGET_ARCH
+      export npm_config_target_arch=$TARGET_ARCH
+      export npm_config_disturl=https://atom.io/download/electron
+      export npm_config_runtime=electron
+      export npm_config_build_from_source=true
+    fi
+
+  - nvm install $NODE_VERSION
+
+  - if [ -z "$TARGET" ]; then
+      export TARGET=$(node -v | sed -e '1s/^.//')
+    fi
+
+install:
+  - HOME=~/.electron-gyp npm install --build-from-source
+
+script:
+  - if [ -z "$TARGET" ]; then
+      npm test
+    fi
+
+after_success:
+  - ./node_modules/.bin/node-pre-gyp package --runtime=$RUNTIME --target=$TARGET;
+    ./node_modules/.bin/node-pre-gyp publish --runtime=$RUNTIME --target=$TARGET;

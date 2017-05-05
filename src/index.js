@@ -1,5 +1,5 @@
-const NativeDatabase = require('bindings')('addon').Database;
-const NativeStatement = require('bindings')('addon').Statement;
+const NativeDatabase = require('bindings')('minisqlite').Database;
+const NativeStatement = require('bindings')('minisqlite').Statement;
 
 import assert from 'assert';
 import Cursor from './cursor';

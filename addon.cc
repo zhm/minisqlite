@@ -8,4 +8,4 @@ NAN_MODULE_INIT(Init) {
   Statement::Init(target);
 }
 
-NODE_MODULE(addon, Init)
+NODE_MODULE(minisqlite, Init)

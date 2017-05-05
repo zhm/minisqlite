@@ -15,8 +15,8 @@ var _cursor2 = _interopRequireDefault(_cursor);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const NativeDatabase = require('bindings')('addon').Database;
-const NativeStatement = require('bindings')('addon').Statement;
+const NativeDatabase = require('bindings')('minisqlite').Database;
+const NativeStatement = require('bindings')('minisqlite').Statement;
 
 let nextObjectID = 0;
 
