@@ -3,8 +3,8 @@
 # Error: /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.20' not found
 
 if [ $TRAVIS_OS_NAME == "linux" ]; then
-  export CC=/usr/bin/gcc-4.9
-  export CXX=/usr/bin/g++-4.9
+  export CC=/usr/bin/gcc-4.8
+  export CXX=/usr/bin/g++-4.8
   export npm_config_clang=0
 else
   export CC=clang
