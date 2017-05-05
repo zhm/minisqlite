@@ -32,9 +32,6 @@ addons:
     - g++-4.9-multilib
     - lcov
 
-before_install:
-- scripts/before-install.sh
-
 install:
 - scripts/install.sh
 
