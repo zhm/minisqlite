@@ -1,3 +1,7 @@
+export CC=/usr/bin/gcc-4.9
+export CXX=/usr/bin/g++-4.9
+export npm_config_clang=0
+
 nvm unload || true
 rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
 source ./__nvm/nvm.sh
