@@ -2,9 +2,14 @@ export CC=clang
 export CXX=clang++
 export npm_config_clang=1
 
-git clone https://github.com/creationix/nvm.git .nvm
-./.nvm
-source ./.nvm/nvm.sh
+nvm unload || true
+rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
+source ./__nvm/nvm.sh
+nvm install ${NODE_VERSION}
+nvm use ${NODE_VERSION}
+node --version
+npm --version
+which node
 
 if [ "$RUNTIME" == "electron" ]; then
   echo "Building electron $TARGET"
@@ -15,8 +20,6 @@ if [ "$RUNTIME" == "electron" ]; then
   export npm_config_runtime=electron
   export npm_config_build_from_source=true
 fi
-
-nvm install $NODE_VERSION
 
 if [ -z "$TARGET" ]; then
   export TARGET=$(node -v | sed -e '1s/^.//')
