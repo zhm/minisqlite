@@ -5,6 +5,8 @@ branches:
 
 sudo: false
 
+compiler: clang
+
 env:
   global:
   - JOBS: '8'
