@@ -1,7 +1,3 @@
-export CC=clang
-export CXX=clang++
-export npm_config_clang=1
-
 nvm unload || true
 rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
 source ./__nvm/nvm.sh

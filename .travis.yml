@@ -3,8 +3,6 @@ branches:
   - master
   - "/^v\\d+\\.\\d+\\.\\d+$/"
 
-compiler: clang
-
 sudo: false
 
 env:
