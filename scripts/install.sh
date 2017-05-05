@@ -2,11 +2,9 @@ export CC=clang
 export CXX=clang++
 export npm_config_clang=1
 
-if [ $TRAVIS_OS_NAME != "linux" ]; then
-  git clone https://github.com/creationix/nvm.git
-  ./.nvm
-  source ./.nvm/nvm.sh
-fi
+git clone https://github.com/creationix/nvm.git
+./.nvm
+source ./.nvm/nvm.sh
 
 if [ "$RUNTIME" == "electron" ]; then
   echo "Building electron $TARGET"
