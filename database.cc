@@ -26,9 +26,11 @@ void Database::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "close", Close);
   Nan::SetPrototypeMethod(tpl, "createFunction", CreateFunction);
 
-  constructor.Reset(tpl->GetFunction());
+  auto function = Nan::GetFunction(tpl).ToLocalChecked();
 
-  exports->Set(Nan::New("Database").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(function);
+
+  Nan::Set(exports, Nan::New("Database").ToLocalChecked(), function);
 
   /* sqlite3_auto_extension((void(*)(void))sqlite3_gpkg_init); */
 }
@@ -174,9 +176,9 @@ void Database::CustomFunctionMain(sqlite3_context *context, int argc, sqlite3_va
 
   v8::Local<v8::Value> arguments[] = { Statement::ConvertValues(argc, argv) };
 
-  auto result = callbacks->at(0)->Call(1, &arguments[0]);
+  auto result = Nan::Call(*callbacks->at(0), 1, arguments);
 
-  SetResult(context, result);
+  SetResult(context, result.ToLocalChecked());
 }
 
 void Database::CustomFunctionStep(sqlite3_context *context, int argc, sqlite3_value **argv) {
@@ -191,7 +193,7 @@ void Database::CustomFunctionStep(sqlite3_context *context, int argc, sqlite3_va
 
   v8::Local<v8::Value> arguments[] = { Statement::ConvertValues(argc, argv), Nan::New(*agg->context) };
 
-  callbacks->at(1)->Call(2, &arguments[0]);
+  Nan::Call(*callbacks->at(1), 2, arguments);
 }
 
 void Database::CustomFunctionFinal(sqlite3_context *context) {
@@ -201,14 +203,14 @@ void Database::CustomFunctionFinal(sqlite3_context *context) {
 
   v8::Local<v8::Value> arguments[] = { Nan::New(*agg->context) };
 
-  auto result = callbacks->at(2)->Call(1, &arguments[0]);
+  auto result = Nan::Call(*callbacks->at(2), 1, arguments);
 
   if (agg->context) {
     agg->context->Reset();
     delete agg->context;
   }
 
-  SetResult(context, result);
+  SetResult(context, result.ToLocalChecked());
 }
 
 void Database::CustomFunctionDestroy(void *pointer) {
@@ -270,6 +272,7 @@ void Database::SetResult(sqlite3_context *context, v8::Local<v8::Value> result) 
     v8::Local<v8::Object> buffer = Nan::To<v8::Object>(result).ToLocalChecked();
     sqlite3_result_blob(context, node::Buffer::Data(buffer), node::Buffer::Length(buffer), SQLITE_TRANSIENT);
   } else {
-    sqlite3_result_text(context, *Nan::Utf8String(result->ToString()), -1, SQLITE_TRANSIENT);
+    Nan::Utf8String value(result);
+    sqlite3_result_text(context, *value, -1, SQLITE_TRANSIENT);
   }
 }

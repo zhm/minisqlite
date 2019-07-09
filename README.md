@@ -2,7 +2,7 @@
 
 # SQLite Version
 
-## 3.18.0
+## 3.28.0
 
 The main features are user-defined JS functions and pull-based processing so the fetching can be fully coordinated from JS.
 

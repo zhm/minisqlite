@@ -25,9 +25,11 @@ void Statement::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "getResults", GetResults);
   Nan::SetPrototypeMethod(tpl, "finished", IsFinished);
 
-  constructor.Reset(tpl->GetFunction());
+  auto function = Nan::GetFunction(tpl).ToLocalChecked();
 
-  exports->Set(Nan::New("Statement").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(function);
+
+  Nan::Set(exports, Nan::New("Statement").ToLocalChecked(), function);
 }
 
 NAN_METHOD(Statement::New) {
