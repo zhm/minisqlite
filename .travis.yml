@@ -19,9 +19,21 @@ matrix:
   - os: linux
     env: export NODE_VERSION="7.6" TARGET_ARCH="x64" RUNTIME="node"
   - os: linux
+    env: export NODE_VERSION="8" TARGET_ARCH="x64" RUNTIME="node"
+  - os: linux
+    env: export NODE_VERSION="10" TARGET_ARCH="x64" RUNTIME="node"
+  - os: linux
+    env: export NODE_VERSION="12" TARGET_ARCH="x64" RUNTIME="node"
+  - os: linux
     env: export NODE_VERSION="7.6" TARGET_ARCH="x64" RUNTIME="electron" TARGET="1.6.6"
   - os: osx
     env: export NODE_VERSION="7.6" TARGET_ARCH="x64" RUNTIME="node"
+  - os: osx
+    env: export NODE_VERSION="8" TARGET_ARCH="x64" RUNTIME="node"
+  - os: osx
+    env: export NODE_VERSION="10" TARGET_ARCH="x64" RUNTIME="node"
+  - os: osx
+    env: export NODE_VERSION="12" TARGET_ARCH="x64" RUNTIME="node"
   - os: osx
     env: export NODE_VERSION="7.6" TARGET_ARCH="x64" RUNTIME="electron" TARGET="1.6.6"
 
