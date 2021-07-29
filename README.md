@@ -1,4 +1,4 @@
-# minisqlite [![Build Status](https://travis-ci.org/zhm/minisqlite.svg?branch=master)](https://travis-ci.org/zhm/minisqlite)
+# minisqlite
 
 # SQLite Version
 
