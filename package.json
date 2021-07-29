@@ -1,6 +1,6 @@
 {
   "name": "minisqlite",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "SQLite bindings for Nodejs",
   "homepage": "http://github.com/zhm/minisqlite",
   "main": "dist/index.js",
@@ -11,7 +11,6 @@
     "test": "mocha test/setup.js test/index.js",
     "clean": "rm -rf dist build",
     "lint": "eslint 'src/**/*.js'",
-    "install": "node-pre-gyp install --fallback-to-build",
     "watch": "babel src --out-dir dist --source-maps --watch"
   },
   "author": "Zac McCormick <zac.mccormick@gmail.com> (http://github.com/zhm)",
@@ -43,11 +42,6 @@
     "nan": "^2.14.2",
     "node-gyp": "^8.1.0",
     "rimraf": "^3.0.2"
-  },
-  "binary": {
-    "module_name": "minisqlite",
-    "module_path": "./build/Release/",
-    "host": "https://zhm.s3.amazonaws.com/minisqlite/"
   },
   "keywords": [
     "sqlite",
