@@ -43,7 +43,6 @@
     "generic-pool": "^2.4.2",
     "nan": "^2.14.2",
     "node-gyp": "^8.1.0",
-    "node-pre-gyp": "^0.17.0",
     "rimraf": "^3.0.2"
   },
   "binary": {
