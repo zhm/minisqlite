@@ -1,21 +1,18 @@
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Statement = exports.Database = undefined;
+exports.Statement = exports.Database = void 0;
 
-var _assert = require('assert');
+var _assert = _interopRequireDefault(require("assert"));
 
-var _assert2 = _interopRequireDefault(_assert);
-
-var _cursor = require('./cursor');
-
-var _cursor2 = _interopRequireDefault(_cursor);
+var _cursor = _interopRequireDefault(require("./cursor"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const NativeDatabase = require('bindings')('minisqlite').Database;
+
 const NativeStatement = require('bindings')('minisqlite').Statement;
 
 let nextObjectID = 0;
@@ -42,15 +39,14 @@ class Database {
 
   all(sql, callback) {
     const rows = [];
-
-    this.query(sql).each((err, _ref) => {
-      let finished = _ref.finished,
-          columns = _ref.columns,
-          values = _ref.values,
-          index = _ref.index,
-          statement = _ref.statement,
-          next = _ref.next;
-
+    this.query(sql).each((err, {
+      finished,
+      columns,
+      values,
+      index,
+      statement,
+      next
+    }) => {
       if (err) {
         callback(err, {});
         return;
@@ -61,7 +57,10 @@ class Database {
       }
 
       if (finished) {
-        callback(err, { rows: rows, columns: columns });
+        callback(err, {
+          rows,
+          columns
+        });
         return;
       }
 
@@ -70,7 +69,9 @@ class Database {
   }
 
   query(sql) {
-    const statement = new Statement({ database: this });
+    const statement = new Statement({
+      database: this
+    });
     return statement.query(sql);
   }
 
@@ -102,6 +103,7 @@ class Database {
 
   createFunction(name, argc, encoding, func, step, final) {
     encoding = encoding || 1; // SQLITE_UTF8
+
     argc = argc || -1;
 
     if (func) {
@@ -131,21 +133,23 @@ class Database {
 
     return this.createFunction(name, -1, 1, null, aggregate, final);
   }
+
 }
 
 exports.Database = Database;
-class Statement {
-  constructor(_ref2) {
-    let database = _ref2.database;
 
+class Statement {
+  constructor({
+    database
+  }) {
     this._native = new NativeStatement();
     this._database = database;
     this.id = ++nextObjectID;
   }
 
   query(sql) {
-    (0, _assert2.default)(this._database instanceof Database, 'invalid database argument');
-    (0, _assert2.default)(this._database._native, 'invalid database handle');
+    (0, _assert.default)(this._database instanceof Database, 'invalid database argument');
+    (0, _assert.default)(this._database._native, 'invalid database handle');
 
     if (!this._native.finished()) {
       throw new Error('client in use, last statement: ' + this._sql);
@@ -156,12 +160,11 @@ class Statement {
     }
 
     sql = sql.replace(/\0/g, '');
-
     this._sql = sql;
 
     this._native.query(this._database._native, sql);
 
-    return new _cursor2.default(this);
+    return new _cursor.default(this);
   }
 
   getResults(returnMetadata, callback) {
@@ -175,6 +178,7 @@ class Statement {
   close() {
     return this._native.close();
   }
+
 }
 
 exports.Statement = Statement;
